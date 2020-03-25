@@ -10,7 +10,7 @@ bot = telebot.TeleBot(token = TOKEN, threaded = False)
 def start(msg):
     bot.send_message(
         msg.chat.id, 
-        "I can ban fuckers :)"
+        "I can ban fuckers :)":
     )
 
 @bot.message_handler(commands = ['reg'], func = lambda msg: is_admin(msg))
@@ -57,7 +57,7 @@ def adm(msg):
                 "Try replying to some message"
             )
 
-@bot.message_handler(commands = ['ban'], func = lambda msg: is_admin(msg))
+@bot.message_handler(commands = ['bye'], func = lambda msg: is_admin(msg))
 def ban_user(msg):
     if not msg.reply_to_message:
         bot.delete_message(msg.chat.id, msg.message_id)
@@ -101,21 +101,32 @@ def ban_user(msg):
     except:
         pass
         
-@bot.message_handler(commands = ['unban'])
+@bot.message_handler(commands = ['unbye'])
 def unban(msg):
     if not msg.text.startswith("/unban@lpnu_banbot"):
+        id_to_unban = 0
+        if msg.reply_to_message:
+            id_to_unban = msg.reply_to_message.from_user.id
+        else:
+            id_to_unban = int(msg.text[7:])
         for i in get_chats():
             try:
-                bot.unban_chat_member(int(i[0]), int(msg.text[7:]))
+                bot.unban_chat_member(int(i[0]), id_to_unban)
             except:
                 bot.send_message(msg.chat.id, "Error")
                 return
     else:
-        try:
-            bot.unban(int(i[0]), int(msg.text[18:]))
-        except:
-            bot.send_message(msg.chat.id, "Error")
-            return
+        id_to_unban = 0
+        if msg.reply_to_message:
+            id_to_unban = msg.reply_to_message.from_user.id
+        else:
+            id_to_unban = int(msg.text[18:])
+        for i in get_chats():
+            try:
+                bot.unban_chat_member(int(i[0]), id_to_unban)
+            except:
+                bot.send_message(msg.chat.id, "Error")
+                return
 
     bot.reply_to(
                 msg, 

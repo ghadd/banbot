@@ -17,7 +17,7 @@ class DataConn:
 def is_admin(msg):
     if not msg:
         return False
-    with DataConn("db.db") as conn:
+    with DataConn("/usr/local/bin/banbot/db.db") as conn:
         cursor = conn.cursor()
         query = 'SELECT * FROM `admins` WHERE `user_id` = "{}"'.format(
             msg.from_user.id
@@ -29,7 +29,7 @@ def is_admin(msg):
 def add_admin(msg):
     if not msg:
         return False
-    with DataConn("db.db") as conn:
+    with DataConn("/usr/local/bin/banbot/db.db") as conn:
         cursor = conn.cursor()
         query = 'INSERT INTO `admins` (`user_id`) VALUES("{}")'.format(
             msg.from_user.id
@@ -41,7 +41,7 @@ def add_admin(msg):
 def remove_admin(msg):
     if not msg:
         return False
-    with DataConn("db.db") as conn:
+    with DataConn("/usr/local/bin/banbot/db.db") as conn:
         cursor = conn.cursor()
         query = 'DELETE FROM `admins` WHERE `user_id` = "{}"'.format(
             msg.from_user.id
@@ -51,7 +51,7 @@ def remove_admin(msg):
         return True
 
 def is_registered(msg):
-    with DataConn("db.db") as conn:
+    with DataConn("/usr/local/bin/banbot/db.db") as conn:
         cursor = conn.cursor()
         query = 'SELECT * FROM `chats` WHERE `chat_id` = "{}"'.format(
             msg.chat.id
@@ -61,7 +61,7 @@ def is_registered(msg):
         return r is not None
 
 def reg(msg):
-    with DataConn("db.db") as conn:
+    with DataConn("/usr/local/bin/banbot/db.db") as conn:
         cursor = conn.cursor()
         query = 'INSERT INTO `chats` (`chat_id`) VALUES("{}")'.format(
             msg.chat.id
@@ -70,7 +70,7 @@ def reg(msg):
         conn.commit()
 
 def unreg(msg):
-    with DataConn("db.db") as conn:
+    with DataConn("/usr/local/bin/banbot/db.db") as conn:
         cursor = conn.cursor()
         query = 'DELETE FROM `chats` WHERE `chat_id` = "{}"'.format(
             msg.chat.id
@@ -79,7 +79,7 @@ def unreg(msg):
         conn.commit()
 
 def get_chats():
-    with DataConn("db.db") as conn:
+    with DataConn("/usr/local/bin/banbot/db.db") as conn:
         cursor = conn.cursor()
         query = 'SELECT * FROM `chats`'
         cursor.execute(query)
