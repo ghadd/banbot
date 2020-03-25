@@ -10,7 +10,7 @@ bot = telebot.TeleBot(token = TOKEN, threaded = False)
 def start(msg):
     bot.send_message(
         msg.chat.id, 
-        "I can ban fuckers :)":
+        "I can ban fuckers :)"
     )
 
 @bot.message_handler(commands = ['reg'], func = lambda msg: is_admin(msg))
@@ -67,22 +67,10 @@ def ban_user(msg):
         return None
 
     reason = ""
-    if not msg.text.startswith("/ban@lpnu_banbot"):
+    if not msg.text.startswith("/bye@lpnu_banbot"):
         reason = msg.text[5:]
     else:
         reason = msg.text[16:]
-    
-    for i in get_chats():
-        bot.kick_chat_member(int(i[0]), msg.reply_to_message.from_user.id, 0)
-        to_delete = (bot.send_message(msg.chat.id,
-        "[{}](tg://user?id={}) banned [{}](tg://user?id={}) for ".format(
-            msg.from_user.first_name, 
-            msg.from_user.id,
-            msg.reply_to_message.from_user.first_name, 
-            msg.reply_to_message.from_user.id
-            ) + reason, 
-            parse_mode = "Markdown"
-        ).message_id)
 
     bot.forward_message(
         LOG_CHAT, 
@@ -93,8 +81,27 @@ def ban_user(msg):
         LOG_CHAT, 
         "reason: " + reason
     )
-    bot.delete_message(msg.chat.id, msg.message_id)
+    user_to_ban_id = msg.reply_to_message.from_user.id
+    to_delete = (bot.send_message(msg.chat.id,
+        "[{}](tg://user?id={}) banned [{}](tg://user?id={}) for ".format(
+            msg.from_user.first_name, 
+            msg.from_user.id,
+            msg.reply_to_message.from_user.first_name, 
+            msg.reply_to_message.from_user.id
+            ) + reason, 
+            parse_mode = "Markdown"
+        ).message_id)
+
+    chats = [int(i[0]) for i in get_chats()]
+    for i in chats:
+        try:
+            bot.kick_chat_member(i, user_to_ban_id, 0)
+            print("OK")
+        except:
+            print("no roots")
+
     bot.delete_message(msg.chat.id, msg.reply_to_message.message_id)
+    bot.delete_message(msg.chat.id, msg.message_id)
     try:
         timer = Timer(60, lambda msg: bot.delete_message(msg.chat.id, to_delete), [msg])
         timer.start()
@@ -103,12 +110,16 @@ def ban_user(msg):
         
 @bot.message_handler(commands = ['unbye'])
 def unban(msg):
-    if not msg.text.startswith("/unban@lpnu_banbot"):
+    if not msg.text.startswith("/unbye@lpnu_banbot"):
         id_to_unban = 0
         if msg.reply_to_message:
             id_to_unban = msg.reply_to_message.from_user.id
         else:
-            id_to_unban = int(msg.text[7:])
+            try:
+                id_to_unban = int(msg.text[7:])
+            except:
+                return
+
         for i in get_chats():
             try:
                 bot.unban_chat_member(int(i[0]), id_to_unban)
@@ -121,6 +132,7 @@ def unban(msg):
             id_to_unban = msg.reply_to_message.from_user.id
         else:
             id_to_unban = int(msg.text[18:])
+            
         for i in get_chats():
             try:
                 bot.unban_chat_member(int(i[0]), id_to_unban)
