@@ -1,101 +1,10 @@
 import telebot 
-import telebot
-import sqlite3
+from utils import *
+from config import *
 from threading import Timer
 import sys
 
-TOKEN = '1149280632:AAGofBLZh-W3h77dd0xj4ikgWAFUUL6_BkA'
-DAN = 662834330
-PUFF = 781222163
-LOG_CHAT = -434708426
-to_delete = []
 bot = telebot.TeleBot(token = TOKEN, threaded = False)
-
-
-class DataConn:
-    def __init__(self, db_name):
-        self.db_name = db_name
-    
-    def __enter__(self):
-        self.conn = sqlite3.connect(self.db_name)
-        return self.conn
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.conn.close()
-        if exc_val:
-            raise
-
-def is_admin(msg):
-    if not msg:
-        return False
-    with DataConn("db.db") as conn:
-        cursor = conn.cursor()
-        query = 'SELECT * FROM `admins` WHERE `user_id` = "{}"'.format(
-            msg.from_user.id
-        )
-        cursor.execute(query)
-        r = cursor.fetchone()
-        return r is not None
-
-def add_admin(msg):
-    if not msg:
-        return False
-    with DataConn("db.db") as conn:
-        cursor = conn.cursor()
-        query = 'INSERT INTO `admins` (`user_id`) VALUES("{}")'.format(
-            msg.from_user.id
-        ) 
-        cursor.execute(query)
-        conn.commit()
-        return True
-
-def remove_admin(msg):
-    if not msg:
-        return False
-    with DataConn("db.db") as conn:
-        cursor = conn.cursor()
-        query = 'DELETE FROM `admins` WHERE `user_id` = "{}"'.format(
-            msg.from_user.id
-        ) 
-        cursor.execute(query)
-        conn.commit()
-        return True
-
-def is_registered(msg):
-    with DataConn("db.db") as conn:
-        cursor = conn.cursor()
-        query = 'SELECT * FROM `chats` WHERE `chat_id` = "{}"'.format(
-            msg.chat.id
-        )
-        cursor.execute(query)
-        r = cursor.fetchone()
-        return r is not None
-
-def reg(msg):
-    with DataConn("db.db") as conn:
-        cursor = conn.cursor()
-        query = 'INSERT INTO `chats` (`chat_id`) VALUES("{}")'.format(
-            msg.chat.id
-        ) 
-        cursor.execute(query)
-        conn.commit()
-
-def unreg(msg):
-    with DataConn("db.db") as conn:
-        cursor = conn.cursor()
-        query = 'DELETE FROM `chats` WHERE `chat_id` = "{}"'.format(
-            msg.chat.id
-        ) 
-        cursor.execute(query)
-        conn.commit()
-
-def get_chats():
-    with DataConn("db.db") as conn:
-        cursor = conn.cursor()
-        query = 'SELECT * FROM `chats`'
-        cursor.execute(query)
-        r = cursor.fetchall()
-        return r
 
 @bot.message_handler(commands = ['start'])
 def start(msg):
@@ -148,33 +57,70 @@ def adm(msg):
                 "Try replying to some message"
             )
 
-@bot.message_handler(commands = ['ban'])
+@bot.message_handler(commands = ['ban'], func = lambda msg: is_admin(msg))
 def ban_user(msg):
     if not msg.reply_to_message:
         bot.delete_message(msg.chat.id, msg.message_id)
         return None
 
+    if msg.reply_to_message.from_user.id in [DAN, PUFF]:
+        return None
+
     reason = ""
-    if msg.text.startswith("/ban"):
+    if not msg.text.startswith("/ban@lpnu_banbot"):
         reason = msg.text[5:]
     else:
         reason = msg.text[16:]
     
     for i in get_chats():
-        bot.kick_chat_member(int(i), msg.reply_to, 0)
-        print(bot.send_message(msg.chat.id,
-            "[{}](tg://user?id={}) banned [{}](tg://user?id={}) for ".format(
-                msg.from_user.first_name, 
-                msg.from_user.id,
-                msg.reply_to_message.from_user.first_name, 
-                msg.reply_to_message.from_user.id
-                ) + reason, 
-                parse_mode = "Markdown"
-        )
-        )
-        # timer = Timer(5, lambda msg: bot.delete_message(msg.chat.id, msg.message_id))
-        # timer.start()
+        bot.kick_chat_member(int(i[0]), msg.reply_to_message.from_user.id, 0)
+        to_delete = (bot.send_message(msg.chat.id,
+        "[{}](tg://user?id={}) banned [{}](tg://user?id={}) for ".format(
+            msg.from_user.first_name, 
+            msg.from_user.id,
+            msg.reply_to_message.from_user.first_name, 
+            msg.reply_to_message.from_user.id
+            ) + reason, 
+            parse_mode = "Markdown"
+        ).message_id)
+
+    bot.forward_message(
+        LOG_CHAT, 
+        msg.chat.id, 
+        msg.reply_to_message.message_id
+    )
+    bot.send_message(
+        LOG_CHAT, 
+        "reason: " + reason
+    )
+    bot.delete_message(msg.chat.id, msg.message_id)
+    bot.delete_message(msg.chat.id, msg.reply_to_message.message_id)
+    try:
+        timer = Timer(60, lambda msg: bot.delete_message(msg.chat.id, to_delete), [msg])
+        timer.start()
+    except:
+        pass
         
+@bot.message_handler(commands = ['unban'])
+def unban(msg):
+    if not msg.text.startswith("/unban@lpnu_banbot"):
+        for i in get_chats():
+            try:
+                bot.unban_chat_member(int(i[0]), int(msg.text[7:]))
+            except:
+                bot.send_message(msg.chat.id, "Error")
+                return
+    else:
+        try:
+            bot.unban(int(i[0]), int(msg.text[18:]))
+        except:
+            bot.send_message(msg.chat.id, "Error")
+            return
+
+    bot.reply_to(
+                msg, 
+                "Unbanned"
+            )
 
 @bot.message_handler(commands = ['getchats'], func = lambda msg: is_admin(msg))
 def getchats(msg):
