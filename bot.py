@@ -155,4 +155,20 @@ def getchats(msg):
         txt
         )
 
+@bot.message_handler(commands = ['help'])
+def gethelp(msg):
+	help_text = """Help text: 
+	- /help - display this message
+	- /getchats - list chats where bot is registered
+	- /bye - (in reply to uses's message) ban user in all registered chats
+	- /unbye - (in reply to uses's message or with user's numeric id as an argument) unban user in all registered chats
+	- /adm - (in reply to user's message) give the user adminsitrator priviligies
+		if supplied with key -rm the command retracts user's adminsitrator priviligies
+	- /reg- adds this chat into bot's DB
+		if supplied with key -rm the command removes this chat from bot's DB"""
+	bot.send_message(
+		msg.chat.id,
+		help_text
+		)
+
 bot.polling(none_stop = True)
